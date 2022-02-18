@@ -79,7 +79,14 @@ class Gmail():
         req = self.service.users().messages().get(userId='me', id=msgId)
         return req.execute()
 
-    def saveMessageToFolder(self, msgId, folder):
+    def _check_if_id_message_present_as_file(self, msgId, folder):
+        for x in os.listdir(folder):
+            if msgId in x:
+                return True
+        return False
+    def saveMessageToFolder(self, msgId, folder, overwrite=False):
+        if not overwrite and self._check_if_id_message_present_as_file(msgId, folder):
+            raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
         payload = msg['payload']
         mimeType = payload['mimeType']
@@ -102,7 +109,7 @@ class Gmail():
             filterArg = str(filter)
 
         while not allMessagesRetrieved:
-            request = self.service.users().messages().list(userId='me', pageToken = pageToken, q=filterArg)
+            request = self.service.users().messages().list(userId='me', pageToken = pageToken, q=filterArg, maxResults = 400)
             response = request.execute()
             messages.extend(response['messages'])
             nbMsgRetrieved = len(messages)
