@@ -2,6 +2,8 @@ from gmail import Gmail, GmailFilter
 
 from datetime import datetime
 
+overWrite = True
+
 def main():
     gmail = Gmail()
     filter = GmailFilter()
@@ -12,7 +14,7 @@ def main():
     for msg in messages:
         print("msg %s" % msg['id'])
         try:
-            gmail.saveMessageToFolder(folder='./results', msgId = msg['id'])
+            gmail.saveMessageToFolder(folder='./results', msgId = msg['id'], overwrite=overWrite)
         except FileExistsError as e:
             print(e)
             print('continue...')

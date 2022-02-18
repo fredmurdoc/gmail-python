@@ -1,4 +1,5 @@
 from glob import escape
+import os
 import os.path
 
 from google.auth.transport.requests import Request
@@ -93,11 +94,15 @@ class Gmail():
         extension = 'html' if  mimeType == 'text/html' else '.txt'
 
         data = payload['body']['data']          
+        dateMsgUnix = float(msg['internalDate'])/1000
+
         decodedbytes = base64.urlsafe_b64decode(data)
         content = str(decodedbytes, "utf-8")            
         with open("%s/%s.%s" % (folder, msgId, extension), 'w') as fp:
             fp.write(content)
             fp.close()
+        
+        os.utime(path="%s/%s.%s" % (folder, msgId, extension), times = (dateMsgUnix, dateMsgUnix))
 
     def listMessages(self, filter: GmailFilter = None):
         filterArg = None
