@@ -1,6 +1,8 @@
 from glob import escape
 import os
 import os.path
+from urllib.error import ContentTooShortError
+from click import FileError
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -10,7 +12,7 @@ from googleapiclient.errors import HttpError
 
 from datetime import datetime
 import base64
-
+import json
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
@@ -36,6 +38,10 @@ class GmailFilter():
             self.filters.append('is:unread')
         else:
             self.filters.append('is:read')
+        return self
+
+    def subject(self, subject):
+        self.filters.append("subject:%s" % subject)
         return self
 
     def __str__(self) -> str:
@@ -80,29 +86,30 @@ class Gmail():
         req = self.service.users().messages().get(userId='me', id=msgId)
         return req.execute()
 
-    def _check_if_id_message_present_as_file(self, msgId, folder):
+    def _check_if_id_message_present_as_payload_file(self, msgId, folder):
         for x in os.listdir(folder):
             if msgId in x:
                 return True
         return False
+    
+    def _check_if_id_message_present_as_dump(self, msgId, folder):
+        return os.path.exists("%s/%s.json" % (folder, msgId))
+    
+
     def saveMessageToFolder(self, msgId, folder, overwrite=False):
-        if not overwrite and self._check_if_id_message_present_as_file(msgId, folder):
+        if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
             raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
-        payload = msg['payload']
-        mimeType = payload['mimeType']
-        extension = 'html' if  mimeType == 'text/html' else '.txt'
-
-        data = payload['body']['data']          
-        dateMsgUnix = float(msg['internalDate'])/1000
-
-        decodedbytes = base64.urlsafe_b64decode(data)
-        content = str(decodedbytes, "utf-8")            
-        with open("%s/%s.%s" % (folder, msgId, extension), 'w') as fp:
-            fp.write(content)
-            fp.close()
         
-        os.utime(path="%s/%s.%s" % (folder, msgId, extension), times = (dateMsgUnix, dateMsgUnix))
+        subject = GmailMessageExtractor.extract_subject(msg)
+        if subject is not None:
+            print(subject)
+        
+        filedump_path = "%s/%s.%s" % (folder, msgId, 'json')
+        with open(filedump_path, 'w') as fp:
+            json.dump(msg, fp)
+        dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
+        os.utime(path=filedump_path, times = (dateMsgUnix, dateMsgUnix))
 
     def listMessages(self, filter: GmailFilter = None):
         filterArg = None
@@ -116,6 +123,8 @@ class Gmail():
         while not allMessagesRetrieved:
             request = self.service.users().messages().list(userId='me', pageToken = pageToken, q=filterArg, maxResults = 400)
             response = request.execute()
+            if 'messages' not in response:
+                break
             messages.extend(response['messages'])
             nbMsgRetrieved = len(messages)
             if response['resultSizeEstimate'] <= nbMsgRetrieved:
@@ -130,3 +139,35 @@ class Gmail():
         return messages
         
 
+class GmailMessageExtractor:
+    
+    @staticmethod
+    def extract_sent_timestamp(msg):
+        return float(msg['internalDate'])/1000
+
+    @staticmethod
+    def extract_payload(msg):
+        payload = msg['payload']
+        if 'data' not in payload['body']:
+            raise Exception('no data in body')
+        data = payload['body']['data']          
+        decodedbytes = base64.urlsafe_b64decode(data)
+        return str(decodedbytes, "utf-8")            
+
+    @staticmethod
+    def guess_mimetype_payload(msg):
+        payload = msg['payload']
+        mimeType = payload['mimeType']
+        return 'html' if  mimeType == 'text/html' else 'txt'
+
+    @staticmethod
+    def extract_and_save_payload(msg, file):
+        content = GmailMessageExtractor.extract_payload(msg)
+        with open("%s/%s.%s" % (file), 'w') as fp:
+            fp.write(content)
+            fp.close()
+
+    @staticmethod
+    def extract_subject(msg):
+        payload = msg['payload']
+        return payload['headers']['Subject'] if 'headers' in payload  and 'Subject' in payload['headers'] else None

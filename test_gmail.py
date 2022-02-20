@@ -31,6 +31,12 @@ class TestGmailFilter(unittest.TestCase):
         filter.fromEmail('bob@example.com')
         self.assertEqual('from:bob@example.com' , str(filter))
 
+    def test_subject(self):
+        filter = GmailFilter()
+        filter.subject('toto')
+        self.assertEqual('subject:toto' , str(filter))
+
+
     def test_chained(self):
         filter = GmailFilter()
         date = datetime.now()
@@ -67,7 +73,7 @@ class TestGmail(unittest.TestCase):
         filter.fromEmail('no.reply@leboncoin.fr')
         messages = gmail.listMessages(filter)
         gmail.saveMessageToFolder(folder='/tmp', msgId = messages[0]['id'], overwrite=True)
-        self.assertTrue(os.path.exists("/tmp/%s.html" % messages[0]['id']))
+        self.assertTrue(os.path.exists("/tmp/%s.json" % messages[0]['id']))
 
 
 if __name__ == '__main__':
