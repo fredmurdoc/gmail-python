@@ -45,11 +45,14 @@ class TestGmailFilter(unittest.TestCase):
 
 class TestGmail(unittest.TestCase):
 
+    def get_gmail(self):
+        return Gmail(credentials_file =  os.getcwd() + '/credentials.json', token_file = os.getcwd() + '/token.json')
+
     def test_init(self):
-        self.assertIsNotNone(Gmail())
+        self.assertIsNotNone(self.get_gmail())
 
     def test_filter(self):
-        gmail = Gmail()
+        gmail = self.get_gmail()
         filter = GmailFilter()
         filter.fromEmail('no.reply@leboncoin.fr')
         messages = gmail.listMessages(filter)
@@ -59,7 +62,7 @@ class TestGmail(unittest.TestCase):
         print(messages[0])
     
     def test_getmessage(self):
-        gmail = Gmail()
+        gmail = self.get_gmail()
         filter = GmailFilter()
         filter.fromEmail('no.reply@leboncoin.fr')
         messages = gmail.listMessages(filter)
@@ -68,7 +71,7 @@ class TestGmail(unittest.TestCase):
         print(msg)
 
     def test_savemessagetotemp(self):
-        gmail = Gmail()
+        gmail = self.get_gmail()
         filter = GmailFilter()
         filter.fromEmail('no.reply@leboncoin.fr')
         messages = gmail.listMessages(filter)
