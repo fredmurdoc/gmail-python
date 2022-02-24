@@ -2,7 +2,7 @@ from gmail import Gmail, GmailFilter
 import os.path
 from datetime import datetime
 
-overWrite = True
+overWrite = False
 
 def main():
     gmail = Gmail(credentials_file=os.path.dirname(__file__)+'/credentials.json', token_file=os.path.dirname(__file__)+'/token.json')
@@ -14,6 +14,10 @@ def main():
     
     filter = GmailFilter()
     filter.fromEmail('leboncoin').subject("Ventes immobilières").fromDate(originDate)
+    messages.extend(gmail.listMessages(filter))
+
+    filter = GmailFilter()
+    filter.fromEmail('leboncoin').subject("eVentes immobilières")
     messages.extend(gmail.listMessages(filter))
 
     print("retrieve %d messages " % len(messages))
