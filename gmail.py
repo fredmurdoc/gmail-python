@@ -97,7 +97,7 @@ class Gmail():
         return os.path.exists("%s/%s.json" % (folder, msgId))
     
 
-    def saveMessageToFolder(self, msgId, folder, overwrite=False):
+    def saveMessageToFolder(self, msgId, folder, overwrite=False, savePayload = False):
         if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
             raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
@@ -111,6 +111,11 @@ class Gmail():
             json.dump(msg, fp)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
         os.utime(path=filedump_path, times = (dateMsgUnix, dateMsgUnix))
+        if savePayload:
+           extension = GmailMessageExtractor.guess_mimetype_payload(msg)
+           payload_path = "%s/%s.%s" % (folder, msgId, extension)
+           GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
+           os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
 
     def listMessages(self, filter: GmailFilter = None):
         filterArg = None
@@ -164,7 +169,7 @@ class GmailMessageExtractor:
     @staticmethod
     def extract_and_save_payload(msg, file):
         content = GmailMessageExtractor.extract_payload(msg)
-        with open("%s/%s.%s" % (file), 'w') as fp:
+        with open(file, 'w') as fp:
             fp.write(content)
             fp.close()
 

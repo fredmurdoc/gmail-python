@@ -1,25 +1,26 @@
 from gmail import Gmail, GmailFilter
-
+import os.path
 from datetime import datetime
 
-overWrite = False
+overWrite = True
 
 def main():
-    gmail = Gmail()
+    gmail = Gmail(credentials_file=os.path.dirname(__file__)+'/credentials.json', token_file=os.path.dirname(__file__)+'/token.json')
     filter = GmailFilter()
     originDate = datetime.strptime('01/01/2015', '%d/%m/%Y')
-    filter.fromEmail('no.reply@leboncoin.fr').fromDate(originDate)
     filter.fromEmail('leboncoin').subject("Maison").fromDate(originDate)
-    #filter.fromEmail('leboncoin').fromDate(originDate)
-    #filter.subject("Ventes immobilières ")
+    
     messages = gmail.listMessages(filter)
-
+    
+    filter = GmailFilter()
+    filter.fromEmail('leboncoin').subject("Ventes immobilières").fromDate(originDate)
+    messages.extend(gmail.listMessages(filter))
 
     print("retrieve %d messages " % len(messages))
     for msg in messages:
         print("msg %s" % msg['id'])
         try:
-            gmail.saveMessageToFolder(folder='./results', msgId = msg['id'], overwrite=overWrite)
+            gmail.saveMessageToFolder(folder='./results', msgId = msg['id'], overwrite=overWrite, savePayload = True)
         except FileExistsError as e:
             print("file error")
             print(e)
