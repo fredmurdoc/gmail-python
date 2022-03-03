@@ -84,7 +84,8 @@ class TestGmail(unittest.TestCase):
         filter = GmailFilter()
         filter.fromEmail('no.reply@leboncoin.fr')
         messages = gmail.listMessages(filter)
-        gmail.saveMessageToFolder(folder='/tmp', msgId = messages[0]['id'], overwrite=True)
+        msg = gmail.getMessage(messages[0]['id'])
+        gmail.saveMessageToFolder(folder='/tmp', msg = msg, overwrite=True)
         self.assertTrue(os.path.exists("/tmp/%s.json" % messages[0]['id']))
 
 

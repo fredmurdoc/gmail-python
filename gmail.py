@@ -87,42 +87,39 @@ class Gmail():
         req = self.service.users().messages().get(userId='me', id=msgId)
         return req.execute()
 
-    def _check_if_id_message_present_as_payload_file(self, msg, folder):
+    def _check_if_message_present_as_payload_file(self, msg, folder):
         file_dump =  self.getPayloadPath(msg, folder)
         return os.path.exists(file_dump)
 
     
-    def _check_if_id_message_present_as_dump(self, msgId, folder):
+    def _check_if_message_present_as_dump(self, msgId, folder):
         file_dump =  self.getDumpPath(msgId, folder)
         return os.path.exists(file_dump)
 
 
-    def getDumpPath(self, msgId, folder):
-        return "%s/%s.%s" % (folder, msgId, 'json')
+    def getDumpPath(self, msg, folder):
+        return "%s/%s.%s" % (folder, msg['id'], 'json')
 
     def getPayloadPath(self, folder, msg):
-        msg = self.getMessage(msg)
         extension = GmailMessageExtractor.guess_mimetype_payload(msg)
         return "%s/%s.%s" % (folder, msg['id'], extension)
 
     def saveMessagePayloadToFolder(self, msg, folder, overwrite=False):
-        if not overwrite and self._check_if_id_message_present_as_payload_file(msgId, folder):
-            raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msgId, folder))
-        payload_path = self.getPayloadPath(folder, msg['id'])
+        if not overwrite and self._check_if_message_present_as_payload_file(msg, folder):
+            raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msg['id'], folder))
+        payload_path = self.getPayloadPath(folder, msg)
         GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
         os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
 
-    def saveMessageToFolder(self, msgId, folder, overwrite=False):
-        if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
-            raise FileExistsError("mesgId %s Message file already exists in : %s " % (msgId, folder))
-        msg = self.getMessage(msgId)
-        
+    def saveMessageToFolder(self, msg, folder, overwrite=False):
+        if not overwrite and self._check_if_message_present_as_dump(msg, folder):
+            raise FileExistsError("mesgId %s Message file already exists in : %s " % (msg['id'], folder))
         subject = GmailMessageExtractor.extract_subject(msg)
         if subject is not None:
             print(subject)
         
-        filedump_path = self.getDumpPath(msgId, folder)
+        filedump_path = self.getDumpPath(msg, folder)
         with open(filedump_path, 'w') as fp:
             json.dump(msg, fp)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
