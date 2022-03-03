@@ -95,7 +95,15 @@ class Gmail():
     
     def _check_if_id_message_present_as_dump(self, msgId, folder):
         return os.path.exists("%s/%s.json" % (folder, msgId))
-    
+
+
+    def getDumpPath(self, msgId, folder):
+        return "%s/%s.%s" % (folder, msgId, 'json')
+
+    def getPayloadPath(self, folder, msgId):
+        msg = self.getMessage(msgId)
+        extension = GmailMessageExtractor.guess_mimetype_payload(msg)
+        return "%s/%s.%s" % (folder, msgId, extension)
 
     def saveMessageToFolder(self, msgId, folder, overwrite=False, savePayload = False):
         if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
@@ -106,14 +114,13 @@ class Gmail():
         if subject is not None:
             print(subject)
         
-        filedump_path = "%s/%s.%s" % (folder, msgId, 'json')
+        filedump_path = self.getDumpPath(msgId, folder)
         with open(filedump_path, 'w') as fp:
             json.dump(msg, fp)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
         os.utime(path=filedump_path, times = (dateMsgUnix, dateMsgUnix))
         if savePayload:
-           extension = GmailMessageExtractor.guess_mimetype_payload(msg)
-           payload_path = "%s/%s.%s" % (folder, msgId, extension)
+           payload_path = self.getPayloadPath(folder, msgId)
            GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
            os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
 
