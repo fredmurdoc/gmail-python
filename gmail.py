@@ -107,7 +107,7 @@ class Gmail():
 
     def saveMessagePayloadToFolder(self, msgId, folder, overwrite=False):
         if not overwrite and self._check_if_id_message_present_as_payload_file(msgId, folder):
-            raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
+            raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
         payload_path = self.getPayloadPath(folder, msgId)
         GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
@@ -116,7 +116,7 @@ class Gmail():
 
     def saveMessageToFolder(self, msgId, folder, overwrite=False):
         if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
-            raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
+            raise FileExistsError("mesgId %s Message file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
         
         subject = GmailMessageExtractor.extract_subject(msg)
