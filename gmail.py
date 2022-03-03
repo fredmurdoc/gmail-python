@@ -88,7 +88,7 @@ class Gmail():
         return req.execute()
 
     def _check_if_message_present_as_payload_file(self, msg, folder):
-        file_dump =  self.getPayloadPath(msg, folder)
+        file_dump =  self.getPayloadPath(msg=msg, folder=folder)
         return os.path.exists(file_dump)
 
     
