@@ -105,7 +105,16 @@ class Gmail():
         extension = GmailMessageExtractor.guess_mimetype_payload(msg)
         return "%s/%s.%s" % (folder, msgId, extension)
 
-    def saveMessageToFolder(self, msgId, folder, overwrite=False, savePayload = False):
+    def saveMessagePayloadToFolder(self, msgId, folder, overwrite=False):
+        if not overwrite and self._check_if_id_message_present_as_payload_file(msgId, folder):
+            raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
+        msg = self.getMessage(msgId)
+        payload_path = self.getPayloadPath(folder, msgId)
+        GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
+        dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
+        os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
+
+    def saveMessageToFolder(self, msgId, folder, overwrite=False):
         if not overwrite and self._check_if_id_message_present_as_dump(msgId, folder):
             raise FileExistsError("mesgId %s file already exists in : %s " % (msgId, folder))
         msg = self.getMessage(msgId)
@@ -119,11 +128,8 @@ class Gmail():
             json.dump(msg, fp)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
         os.utime(path=filedump_path, times = (dateMsgUnix, dateMsgUnix))
-        if savePayload:
-           payload_path = self.getPayloadPath(folder, msgId)
-           GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
-           os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
-
+        
+        
     def listMessages(self, filter: GmailFilter = None):
         filterArg = None
         nbMsgRetrieved = 0

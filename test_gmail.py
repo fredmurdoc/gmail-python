@@ -70,6 +70,14 @@ class TestGmail(unittest.TestCase):
         self.assertIsNotNone(msg)
         print(msg)
 
+    def test_savepayloadtotemp(self):
+        gmail = self.get_gmail()
+        filter = GmailFilter()
+        filter.fromEmail('no.reply@leboncoin.fr')
+        messages = gmail.listMessages(filter)
+        gmail.saveMessagePayloadToFolder(folder='/tmp', msgId = messages[0]['id'], overwrite=True)
+        self.assertTrue(os.path.exists("/tmp/%s.html" % messages[0]['id']))
+
     def test_savemessagetotemp(self):
         gmail = self.get_gmail()
         filter = GmailFilter()
