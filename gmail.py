@@ -87,29 +87,28 @@ class Gmail():
         req = self.service.users().messages().get(userId='me', id=msgId)
         return req.execute()
 
-    def _check_if_id_message_present_as_payload_file(self, msgId, folder):
-        for x in os.listdir(folder):
-            if msgId in x:
-                return True
-        return False
+    def _check_if_id_message_present_as_payload_file(self, msg, folder):
+        file_dump =  self.getPayloadPath(msg, folder)
+        return os.path.exists(file_dump)
+
     
     def _check_if_id_message_present_as_dump(self, msgId, folder):
-        return os.path.exists("%s/%s.json" % (folder, msgId))
+        file_dump =  self.getDumpPath(msgId, folder)
+        return os.path.exists(file_dump)
 
 
     def getDumpPath(self, msgId, folder):
         return "%s/%s.%s" % (folder, msgId, 'json')
 
-    def getPayloadPath(self, folder, msgId):
-        msg = self.getMessage(msgId)
+    def getPayloadPath(self, folder, msg):
+        msg = self.getMessage(msg)
         extension = GmailMessageExtractor.guess_mimetype_payload(msg)
-        return "%s/%s.%s" % (folder, msgId, extension)
+        return "%s/%s.%s" % (folder, msg['id'], extension)
 
-    def saveMessagePayloadToFolder(self, msgId, folder, overwrite=False):
+    def saveMessagePayloadToFolder(self, msg, folder, overwrite=False):
         if not overwrite and self._check_if_id_message_present_as_payload_file(msgId, folder):
             raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msgId, folder))
-        msg = self.getMessage(msgId)
-        payload_path = self.getPayloadPath(folder, msgId)
+        payload_path = self.getPayloadPath(folder, msg['id'])
         GmailMessageExtractor.extract_and_save_payload(msg, payload_path)
         dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
         os.utime(path=payload_path, times = (dateMsgUnix, dateMsgUnix))
