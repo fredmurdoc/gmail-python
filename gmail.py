@@ -104,6 +104,22 @@ class Gmail():
         extension = GmailMessageExtractor.guess_mimetype_payload(msg)
         return "%s/%s.%s" % (folder, msg['id'], extension)
 
+    def saveMessagePartsByMimeTypeToFolder(self, msg, mimetype, folder, overwrite=False):
+        if not overwrite and self._check_if_message_present_as_payload_file(msg, folder):
+            raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msg['id'], folder))
+        payload_path = self.getPayloadPath(folder, msg)
+        parts = GmailMessageExtractor.get_parts_from_mimetype(msg, mimetype)
+        dateMsgUnix = GmailMessageExtractor.extract_sent_timestamp(msg)
+        for index, part in enumerate(parts):
+            extension = GmailMessageExtractor.get_extension_for_mimetype(part['mimeType'])
+            
+            part_path = "%s/%s_part_%s.%s" % (folder, msg['id'], index, extension)
+            if 'body' in part and 'data' in part['body']:
+                data = part['body']['data']
+                with open(part_path, 'w') as fp:
+                    fp.write(GmailMessageExtractor.convert_frombase64_mail_item(data))
+                os.utime(path=part_path, times = (dateMsgUnix, dateMsgUnix))
+
     def saveMessagePayloadToFolder(self, msg, folder, overwrite=False):
         if not overwrite and self._check_if_message_present_as_payload_file(msg, folder):
             raise FileExistsError("mesgId %s Payload file already exists in : %s " % (msg['id'], folder))
@@ -161,19 +177,41 @@ class GmailMessageExtractor:
         return float(msg['internalDate'])/1000
 
     @staticmethod
+    def convert_frombase64_mail_item(data):
+        decodedbytes = base64.urlsafe_b64decode(data)
+        return str(decodedbytes, "utf-8")            
+
+    @staticmethod
     def extract_payload(msg):
         payload = msg['payload']
         if 'data' not in payload['body']:
             raise Exception('no data in body')
         data = payload['body']['data']          
-        decodedbytes = base64.urlsafe_b64decode(data)
-        return str(decodedbytes, "utf-8")            
+        return GmailMessageExtractor.convert_frombase64_mail_item(data)
+        
+    @staticmethod
+    def get_parts_from_mimetype(msg, mimetype):
+        parts = []
+        payload = msg['payload']
+
+        if 'parts' not in payload:
+            raise Exception('no parts in body')
+        for superpart in payload['parts']:
+            if 'parts' in  superpart:
+                parts.extend([part for part in superpart['parts'] if part['mimeType'] == mimetype])
+                     
+        return parts
+
+
+    @staticmethod
+    def get_extension_for_mimetype(mimetype):
+        return 'html' if  mimetype == 'text/html' else 'txt'
 
     @staticmethod
     def guess_mimetype_payload(msg):
         payload = msg['payload']
         mimeType = payload['mimeType']
-        return 'html' if  mimeType == 'text/html' else 'txt'
+        return GmailMessageExtractor.get_extension_for_mimetype(mimeType)
 
     @staticmethod
     def extract_and_save_payload(msg, file):

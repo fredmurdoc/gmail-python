@@ -88,6 +88,16 @@ class TestGmail(unittest.TestCase):
         gmail.saveMessageToFolder(folder='/tmp', msg = msg, overwrite=True)
         self.assertTrue(os.path.exists("/tmp/%s.json" % messages[0]['id']))
 
+    def test_savepartstotemp(self):
+        gmail = self.get_gmail()
+        filter = GmailFilter()
+        filter.fromEmail('immobilier.notaires.fr').subject('nouvelle')
+        messages = gmail.listMessages(filter)
+        msg = gmail.getMessage(messages[0]['id'])
+        gmail.saveMessagePartsByMimeTypeToFolder(folder='/tmp', msg = msg,mimetype='text/html', overwrite=True)
+        self.assertTrue(os.path.exists("/tmp/%s_part_0.html" % msg['id']))
+
+
 
 if __name__ == '__main__':
     unittest.main()
