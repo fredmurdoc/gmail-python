@@ -27,11 +27,12 @@ class GmailFilter():
         return self
     
     def fromDate(self, date: datetime):
-        self.filters.append("after:%d" % date.timestamp())
+        self.filters.append("after:%s" % datetime.strftime(date, '%Y-%m-%d'))
+        
         return self
     
     def toDate(self, date: datetime):
-        self.filters.append("before:%d" % date.timestamp())
+        self.filters.append("before:%s" % datetime.strftime(date, '%Y-%m-%d'))
         return self
     
     def isRead(self, read: bool = False):
