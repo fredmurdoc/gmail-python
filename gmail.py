@@ -64,18 +64,22 @@ class Gmail():
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
+                print('creds need to update, refresh..')
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_file, SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
+            print("Save the credentials for the next run")
             with open(token_file, 'w') as token:
                 token.write(creds.to_json())
 
         try:
             # Call the Gmail API
+            print("Call the Gmail API")
             self.service = build('gmail', 'v1', credentials=creds)
+            print('Gmail Service is ready')
 
         except HttpError as error:
             # TODO(developer) - Handle errors from gmail API.
